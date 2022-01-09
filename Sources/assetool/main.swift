@@ -34,7 +34,7 @@ extension Assetool {
 
         static var configuration = CommandConfiguration(
             abstract: "Generates icon set for Apple platforms. Multiple platform idioms can be merged into one single appiconset",
-            discussion: "<platforms> flag: Valid values are: 'ios', 'iphone', 'ipad', 'mac', 'tv', 'car'. To generate an icon set with multiple platform idioms, multiple values should be separated by comma, e.g. 'ios,mac,watch'")
+            discussion: "<platforms> flag: Valid values are: 'ios', 'iphone', 'ipad', 'mac', 'car'. To generate an icon set with multiple platform idioms, multiple values should be separated by comma, e.g. 'ios,mac,watch'")
 
         func run() throws {
             let parsedPlatforms: [AssetKit.Platform] = platforms.split(separator: ",").map { platformStr in
