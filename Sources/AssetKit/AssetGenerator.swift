@@ -14,6 +14,7 @@ public class AssetGenerator {
     public enum AssetGeneratorError: Error {
         case configError
         case dataSourceError
+        case resourceError
         case resizeError
     }
 
@@ -32,13 +33,32 @@ public class AssetGenerator {
         .mac: Set(["mac"]),
     ]
 
+    public func generateIconSet(input: NSImage,
+                                outputPath: String,
+                                platforms: [AssetKit.Platform] = [.ios]) throws {
+        guard let imageSource = AssetUtils.createCGImageSource(from: input) else {
+            throw AssetGeneratorError.dataSourceError
+        }
+
+        try generateIconSet(imageSource: imageSource, outputPath: outputPath, platforms: platforms)
+    }
+
     public func generateIconSet(inputPath: String,
                                 outputPath: String,
                                 platforms: [AssetKit.Platform] = [.ios]) throws {
-        guard let imageSource = AssetUtils.createCGImageSource(from: inputPath),
-              var config = AssetUtils.loadResourceJson(filename: "icon_contents") else {
-                  throw AssetGeneratorError.dataSourceError
-              }
+        guard let imageSource = AssetUtils.createCGImageSource(from: inputPath) else {
+            throw AssetGeneratorError.dataSourceError
+        }
+
+        try generateIconSet(imageSource: imageSource, outputPath: outputPath, platforms: platforms)
+    }
+
+    private func generateIconSet(imageSource: CGImageSource,
+                                 outputPath: String,
+                                 platforms: [AssetKit.Platform] = [.ios]) throws {
+        guard var config = AssetUtils.loadResourceJson(filename: "icon_contents") else {
+            throw AssetGeneratorError.resourceError
+        }
 
         let outputFolder = URL(fileURLWithPath: outputPath).appendingPathComponent("AppIcon.appiconset")
         try AssetUtils.createDirectoryIfNeeded(url: outputFolder)
@@ -93,14 +113,45 @@ public class AssetGenerator {
         try AssetUtils.writeDictionaryToJson(config, filename: "Contents.json", url: outputFolder)
     }
 
+    public func generateImageSet(input: NSImage,
+                                 filename: String,
+                                 outputPath: String,
+                                 width: CGFloat? = nil,
+                                 height: CGFloat? = nil) throws {
+        guard let imageSource = AssetUtils.createCGImageSource(from: input) else {
+            throw AssetGeneratorError.dataSourceError
+        }
+        try generateImageSet(
+            imageSource: imageSource,
+            filename: filename,
+            outputPath: outputPath,
+            width: width,
+            height: height)
+    }
+
     public func generateImageSet(inputPath: String,
                                  outputPath: String,
                                  width: CGFloat? = nil,
                                  height: CGFloat? = nil) throws {
-        guard let imageSource = AssetUtils.createCGImageSource(from: inputPath),
-              let originalSize = AssetUtils.sizeOfImage(at: inputPath),
+        guard let imageSource = AssetUtils.createCGImageSource(from: inputPath) else {
+            throw AssetGeneratorError.dataSourceError
+        }
+        try generateImageSet(
+            imageSource: imageSource,
+            filename: AssetUtils.extractFilename(inputPath: inputPath),
+            outputPath: outputPath,
+            width: width,
+            height: height)
+    }
+
+    private func generateImageSet(imageSource: CGImageSource,
+                                  filename: String,
+                                  outputPath: String,
+                                  width: CGFloat? = nil,
+                                  height: CGFloat? = nil) throws {
+        guard let originalSize = AssetUtils.sizeOfImageSource(imageSource),
               var config = AssetUtils.loadResourceJson(filename: "image_contents") else {
-                  throw AssetGeneratorError.dataSourceError
+                  throw AssetGeneratorError.resourceError
               }
 
         // @1x size
@@ -121,7 +172,6 @@ public class AssetGenerator {
             oneXHeight = originalSize.height / 3
         }
 
-        let filename = AssetUtils.extractFilename(inputPath: inputPath)
         let outputFolder = URL(fileURLWithPath: outputPath).appendingPathComponent("\(filename).imageset")
 
         try AssetUtils.createDirectoryIfNeeded(url: outputFolder)

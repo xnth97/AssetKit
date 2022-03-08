@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AppKit
 import ImageIO
 
 struct AssetUtils {
@@ -24,11 +25,28 @@ struct AssetUtils {
         return CGImageSourceCreateWithURL(fileUrl, nil)
     }
 
+    static func createCGImageSource(from image: NSImage) -> CGImageSource? {
+        guard let data = image.tiffRepresentation else {
+            return nil
+        }
+        return CGImageSourceCreateWithData(data as CFData, nil)
+    }
+
+    static func sizeOfImage(for image: NSImage) -> CGSize? {
+        guard let source = createCGImageSource(from: image) else {
+            return nil
+        }
+        return sizeOfImageSource(source)
+    }
+
     static func sizeOfImage(at path: String) -> CGSize? {
         guard let source = createCGImageSource(from: path) else {
             return nil
         }
+        return sizeOfImageSource(source)
+    }
 
+    static func sizeOfImageSource(_ source: CGImageSource) -> CGSize? {
         let propertiesOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, propertiesOptions) as? [CFString: Any] else {
             return nil
