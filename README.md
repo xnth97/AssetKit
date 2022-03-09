@@ -2,6 +2,14 @@
 
 A command line tool and Swift package for generating image assets for Apple platforms.
 
+# GUI
+
+[![](/Images/badge.svg)](https://apps.apple.com/us/app/assetool/id1613455194?l=zh&mt=12)
+
+`Assetool` is a SwiftUI app built on top of `AssetKit`. Free download from Mac App Store.
+
+![](/Images/demo.jpg)
+
 # CLI
 
 ## Installation
