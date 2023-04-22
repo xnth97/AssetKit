@@ -10,13 +10,10 @@ import AppKit
 
 public struct AssetKit {
 
-    public enum Platform: String {
-        case iphone
-        case ipad
+    public enum Platform: String, CaseIterable {
         case ios
-        case car
-        case watch
-        case mac
+        case macos
+        case watchos
     }
 
     private static let generator = AssetGenerator()
@@ -31,7 +28,11 @@ public struct AssetKit {
                                         outputPath: String,
                                         width: CGFloat? = nil,
                                         height: CGFloat? = nil) {
-        try? generator.generateImageSet(inputPath: inputPath, outputPath: outputPath, width: width, height: height)
+        try? generator.generateImageSet(
+            inputPath: inputPath,
+            outputPath: outputPath,
+            width: width,
+            height: height)
     }
 
     /// Generates `.imageset` with a given input image.
@@ -46,7 +47,12 @@ public struct AssetKit {
                                         outputPath: String,
                                         width: CGFloat? = nil,
                                         height: CGFloat? = nil) {
-        try? generator.generateImageSet(input: input, filename: filename, outputPath: outputPath, width: width, height: height)
+        try? generator.generateImageSet(
+            input: input,
+            filename: filename,
+            outputPath: outputPath,
+            width: width,
+            height: height)
     }
 
     /// Generates `.appiconset` with a given input image.
@@ -54,10 +60,16 @@ public struct AssetKit {
     ///   - inputPath: Path to input image.
     ///   - outputPath: Path to output folder.
     ///   - platforms: Platform idioms that need to be included in the generated icon set.
+    ///   - prefersUniversal: Generates single size for iOS and watchOS, suited for newer Xcode.
     public static func generateIconSet(inputPath: String,
                                        outputPath: String,
-                                       platforms: [Platform] = [.ios]) {
-        try? generator.generateIconSet(inputPath: inputPath, outputPath: outputPath, platforms: platforms)
+                                       platforms: Set<Platform> = [.ios],
+                                       prefersUniversal: Bool = false) {
+        try? generator.generateIconSet(
+            inputPath: inputPath,
+            outputPath: outputPath,
+            platforms: platforms,
+            prefersUniversal: prefersUniversal)
     }
 
     /// Generates `.appiconset` with a given input image.
@@ -65,10 +77,16 @@ public struct AssetKit {
     ///   - input: Input `NSImage` image.
     ///   - outputPath: Path to output folder.
     ///   - platforms: Platform idioms that need to be included in the generated icon set.
+    ///   - prefersUniversal: Generates single size for iOS and watchOS, suited for newer Xcode.
     public static func generateIconSet(input: NSImage,
                                        outputPath: String,
-                                       platforms: [AssetKit.Platform] = [.ios]) {
-        try? generator.generateIconSet(input: input, outputPath: outputPath, platforms: platforms)
+                                       platforms: Set<Platform> = [.ios],
+                                       prefersUniversal: Bool = false) {
+        try? generator.generateIconSet(
+            input: input,
+            outputPath: outputPath,
+            platforms: platforms,
+            prefersUniversal: prefersUniversal)
     }
 
 }

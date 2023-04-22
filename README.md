@@ -14,7 +14,15 @@ A command line tool and Swift package for generating image assets for Apple plat
 
 ## Installation
 
+### Prebuilt
+
 Please download prebuilt binaries from [Releases](https://github.com/xnth97/AssetKit/releases).
+
+### Build
+
+1. Clone this repo, `cd` into the base directory.
+2. Run `swift build -c release`.
+3. Binaries are located in `.build/release`.
 
 ## Usage
 
@@ -23,12 +31,14 @@ The CLI `assetool` supports subcommands for generating both `.appiconset` and `.
 ### Icon
 
 ```
-assetool <input> [-o <output>] [-p <platforms>]
+assetool <input> [-o <output>] [-p <platforms>] [--universal]
 ```
 
 `-o, --output <output>`: Path of the output folder. If empty, will use current path of terminal.
 
-`-p, --platforms <platforms>`: Valid values are: `ios`, `iphone`, `ipad`, `mac`, `car`. You can also generate an icon set with multiple platform idioms by sending a string of multiple values separated by comma, e.g. `ios,mac,watch`.
+`-p, --platforms <platforms>`: Valid values are: `ios`, `mac`, `macos`, `watch`, `watchos`. You can also generate an icon set with multiple platform idioms by sending a string of multiple values separated by comma, e.g. `ios,mac,watch`.
+
+`-u, --universal` Generates single size for iOS and watchOS, suited for newer Xcode.
 
 ### Image
 

@@ -24,43 +24,38 @@ public class AssetGenerator {
         let filename: String
     }
 
-    private static let platformIdiomMap: [AssetKit.Platform: Set<String>] = [
-        .iphone: Set(["iphone", "ios-marketing"]),
-        .ipad: Set(["ipad", "ios-marketing"]),
-        .ios: Set(["iphone", "ipad", "ios-marketing"]),
-        .watch: Set(["watch", "watch-marketing"]),
-        .car: Set(["car", "car"]),
-        .mac: Set(["mac"]),
-    ]
-
     public func generateIconSet(input: NSImage,
                                 outputPath: String,
-                                platforms: [AssetKit.Platform] = [.ios]) throws {
-        guard let imageSource = AssetUtils.createCGImageSource(from: input) else {
-            throw AssetGeneratorError.dataSourceError
-        }
-
-        try generateIconSet(imageSource: imageSource, outputPath: outputPath, platforms: platforms)
+                                platforms: Set<AssetKit.Platform> = [.ios],
+                                prefersUniversal: Bool = true) throws {
+        let imageSource = try AssetUtils.createCGImageSource(from: input)
+        try generateIconSet(
+            imageSource: imageSource,
+            outputPath: outputPath,
+            platforms: platforms,
+            prefersUniversal: prefersUniversal)
     }
 
     public func generateIconSet(inputPath: String,
                                 outputPath: String,
-                                platforms: [AssetKit.Platform] = [.ios]) throws {
-        guard let imageSource = AssetUtils.createCGImageSource(from: inputPath) else {
-            throw AssetGeneratorError.dataSourceError
-        }
-
-        try generateIconSet(imageSource: imageSource, outputPath: outputPath, platforms: platforms)
+                                platforms: Set<AssetKit.Platform> = [.ios],
+                                prefersUniversal: Bool = true) throws {
+        let imageSource = try AssetUtils.createCGImageSource(from: inputPath)
+        try generateIconSet(
+            imageSource: imageSource,
+            outputPath: outputPath,
+            platforms: platforms,
+            prefersUniversal: prefersUniversal)
     }
 
     private func generateIconSet(imageSource: CGImageSource,
                                  outputPath: String,
-                                 platforms: [AssetKit.Platform] = [.ios]) throws {
-        guard var config = AssetUtils.loadResourceJson(filename: "icon_contents") else {
-            throw AssetGeneratorError.resourceError
-        }
+                                 platforms: Set<AssetKit.Platform> = [.ios],
+                                 prefersUniversal: Bool) throws {
+        var config = try AssetUtils.loadResourceJson(filename: "icon_contents")
 
-        let outputFolder = URL(fileURLWithPath: outputPath).appendingPathComponent("AppIcon.appiconset")
+        let iconSetFileName = "AppIcon.appiconset"
+        let outputFolder = URL(fileURLWithPath: outputPath).appendingPathComponent(iconSetFileName)
         try AssetUtils.createDirectoryIfNeeded(url: outputFolder)
 
         var resizeConfigs: [ResizeConfiguration] = []
@@ -68,35 +63,26 @@ public class AssetGenerator {
         guard let imageConfigs = config["images"] as? [[String: Any]] else {
             throw AssetGeneratorError.configError
         }
+
         for imageConfig in imageConfigs {
-            guard let idiom = imageConfig["idiom"] as? String else {
-                throw AssetGeneratorError.configError
-            }
-
-            func shouldUseThisConfig() -> Bool {
-                for platform in platforms {
-                    guard let platformIdiomStringSet = Self.platformIdiomMap[platform] else {
-                        continue
-                    }
-                    if platformIdiomStringSet.contains(idiom) {
-                        return true
-                    }
-                }
-                return false
-            }
-
-            guard shouldUseThisConfig() else {
+            guard let configPlatform = getPlatform(from: imageConfig),
+                  platforms.contains(configPlatform) else {
                 continue
             }
 
-            guard let scaleStr = (imageConfig["scale"] as? String)?.prefix(1),
-                  let scale = Float(scaleStr),
-                  let sizeStr = (imageConfig["size"] as? String)?.split(separator: "x")[0],
-                  let size = Float(sizeStr) else {
-                      continue
-                  }
+            /// If prefers universal, skip image config parsing.
+            if prefersUniversal, configPlatform == .ios || configPlatform == .watchos {
+                continue
+            }
 
-            let newFilename = "AppIcon-\(sizeStr)@\(scaleStr)x.png"
+            let scaleStr = (imageConfig["scale"] as? String)?.prefix(1) ?? "1"
+            guard let scale = Float(scaleStr),
+                  let sizeStr = (imageConfig["size"] as? String)?.split(separator: "x").first,
+                  let size = Float(sizeStr) else {
+                continue
+            }
+
+            let newFilename = "AppIcon_\(sizeStr)@\(scaleStr)x.png"
             let resizeConfig = ResizeConfiguration(width: Int(size * scale), height: Int(size * scale), filename: newFilename)
             resizeConfigs.append(resizeConfig)
 
@@ -105,12 +91,46 @@ public class AssetGenerator {
             filteredImageConfigs.append(mutableImageConfig)
         }
 
+        /// If prefers universal, generate 1024x1024 images for `ios` and `watchos`.
+        if prefersUniversal {
+            for platform in platforms {
+                guard platform == .ios || platform == .watchos else {
+                    continue
+                }
+
+                let filename = "AppIcon_\(platform.rawValue).png"
+                resizeConfigs.append(ResizeConfiguration(width: 1024, height: 1024, filename: filename))
+                filteredImageConfigs.append([
+                    "filename" : filename,
+                    "idiom" : "universal",
+                    "platform" : platform.rawValue,
+                    "size" : "1024x1024",
+                ])
+            }
+        }
+
         resizeConfigs.forEach { config in
             try? resizeImage(imageSource: imageSource, resizeConfiguration: config, outputUrl: outputFolder)
         }
 
         config["images"] = filteredImageConfigs
         try AssetUtils.writeDictionaryToJson(config, filename: "Contents.json", url: outputFolder)
+
+        print("[assetool] IconSet generated at \(outputFolder)")
+    }
+
+    private func getPlatform(from config: [String: Any]) -> AssetKit.Platform? {
+        if (config["idiom"] as? String) == "mac" {
+            return .macos
+        }
+        if let platformString = config["platform"] as? String {
+            if platformString == "ios" {
+                return .ios
+            } else if platformString == "watchos" {
+                return .watchos
+            }
+        }
+        return nil
     }
 
     public func generateImageSet(input: NSImage,
@@ -118,9 +138,7 @@ public class AssetGenerator {
                                  outputPath: String,
                                  width: CGFloat? = nil,
                                  height: CGFloat? = nil) throws {
-        guard let imageSource = AssetUtils.createCGImageSource(from: input) else {
-            throw AssetGeneratorError.dataSourceError
-        }
+        let imageSource = try AssetUtils.createCGImageSource(from: input)
         try generateImageSet(
             imageSource: imageSource,
             filename: filename,
@@ -133,9 +151,7 @@ public class AssetGenerator {
                                  outputPath: String,
                                  width: CGFloat? = nil,
                                  height: CGFloat? = nil) throws {
-        guard let imageSource = AssetUtils.createCGImageSource(from: inputPath) else {
-            throw AssetGeneratorError.dataSourceError
-        }
+        let imageSource = try AssetUtils.createCGImageSource(from: inputPath)
         try generateImageSet(
             imageSource: imageSource,
             filename: AssetUtils.extractFilename(inputPath: inputPath),
@@ -149,10 +165,11 @@ public class AssetGenerator {
                                   outputPath: String,
                                   width: CGFloat? = nil,
                                   height: CGFloat? = nil) throws {
-        guard let originalSize = AssetUtils.sizeOfImageSource(imageSource),
-              var config = AssetUtils.loadResourceJson(filename: "image_contents") else {
-                  throw AssetGeneratorError.resourceError
-              }
+        guard let originalSize = AssetUtils.sizeOfImageSource(imageSource) else {
+            throw AssetGeneratorError.resourceError
+        }
+
+        var config = try AssetUtils.loadResourceJson(filename: "image_contents")
 
         // @1x size
         var oneXWidth: CGFloat = 0
@@ -213,7 +230,7 @@ public class AssetGenerator {
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceShouldCacheImmediately: true,
             kCGImageSourceThumbnailMaxPixelSize: max(resizeConfiguration.width, resizeConfiguration.height),
-        ] as CFDictionary
+        ] as [CFString : Any] as CFDictionary
 
         guard let resized = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options) else {
             throw AssetGeneratorError.dataSourceError

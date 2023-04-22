@@ -11,36 +11,40 @@ import ImageIO
 
 struct AssetUtils {
 
-    static func loadResourceJson(filename: String) -> [String: Any]? {
+    static func loadResourceJson(filename: String) throws -> [String: Any] {
         guard let jsonUrl = Bundle.module.url(forResource: filename, withExtension: "json"),
               let jsonData = try? Data(contentsOf: jsonUrl),
               let jsonDict = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] else {
-                  return nil
-              }
+            throw AssetGenerator.AssetGeneratorError.configError
+        }
         return jsonDict
     }
 
-    static func createCGImageSource(from path: String) -> CGImageSource? {
+    static func createCGImageSource(from path: String) throws -> CGImageSource {
         let fileUrl = URL(fileURLWithPath: path) as CFURL
-        return CGImageSourceCreateWithURL(fileUrl, nil)
+        guard let imageSource = CGImageSourceCreateWithURL(fileUrl, nil) else {
+            throw AssetGenerator.AssetGeneratorError.dataSourceError
+        }
+        return imageSource
     }
 
-    static func createCGImageSource(from image: NSImage) -> CGImageSource? {
-        guard let data = image.tiffRepresentation else {
-            return nil
+    static func createCGImageSource(from image: NSImage) throws -> CGImageSource {
+        guard let data = image.tiffRepresentation,
+              let imageSource = CGImageSourceCreateWithData(data as CFData, nil) else {
+            throw AssetGenerator.AssetGeneratorError.dataSourceError
         }
-        return CGImageSourceCreateWithData(data as CFData, nil)
+        return imageSource
     }
 
     static func sizeOfImage(for image: NSImage) -> CGSize? {
-        guard let source = createCGImageSource(from: image) else {
+        guard let source = try? createCGImageSource(from: image) else {
             return nil
         }
         return sizeOfImageSource(source)
     }
 
     static func sizeOfImage(at path: String) -> CGSize? {
-        guard let source = createCGImageSource(from: path) else {
+        guard let source = try? createCGImageSource(from: path) else {
             return nil
         }
         return sizeOfImageSource(source)
@@ -54,8 +58,8 @@ struct AssetUtils {
 
         guard let width = properties[kCGImagePropertyPixelWidth] as? CGFloat,
               let height = properties[kCGImagePropertyPixelHeight] as? CGFloat else {
-                  return nil
-              }
+            return nil
+        }
 
         return CGSize(width: width, height: height)
     }
