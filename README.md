@@ -8,7 +8,7 @@ A command line tool and Swift package for generating image assets for Apple plat
 
 `Assetool` is a SwiftUI app built on top of `AssetKit`. Free download from Mac App Store.
 
-![](/Images/demo.jpg)
+![](/Images/demo.png)
 
 # CLI
 
@@ -48,13 +48,21 @@ assetool image <input> [-o <output>] [--width <width>] [--height <height>]
 
 `--width <width>` and `--height <height>`: @1x width or height of the exported image set. If empty, will use the original width/height as @3x size.
 
+### OSX Iconset
+
+The `osx-iconset` subcommand generates OS X `.iconset` format. See [Icon Set Type](https://developer.apple.com/library/archive/documentation/Xcode/Reference/xcode_ref-Asset_Catalog_Format/IconSetType.html) for details.
+
+```
+assetool osx-iconset <input> [-o <output>]
+```
+
 # Package
 
 ## Installation
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/xnth97/AssetKit", from: "1.0.0"),
+    .package(url: "https://github.com/xnth97/AssetKit", from: "1.2.1"),
 ],
 ```
 
