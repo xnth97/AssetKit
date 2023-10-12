@@ -89,4 +89,14 @@ public struct AssetKit {
             prefersUniversal: prefersUniversal)
     }
 
+    /// Generates a traditional OSX `icon.iconset`.
+    /// See `https://developer.apple.com/library/archive/documentation/Xcode/Reference/xcode_ref-Asset_Catalog_Format/IconSetType.html`
+    /// - Parameters:
+    ///   - inputPath: Input path to image.
+    ///   - outputPath: Path to output folder.
+    public static func generateOSXIconSet(inputPath: String,
+                                          outputPath: String) {
+        try? generator.generateOSXIconSet(inputPath: inputPath, outputPath: outputPath)
+    }
+
 }

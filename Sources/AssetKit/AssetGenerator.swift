@@ -245,4 +245,30 @@ public class AssetGenerator {
         return try pngData.write(to: fileUrl)
     }
 
+    public func generateOSXIconSet(inputPath: String,
+                                   outputPath: String) throws {
+        let imageSource = try AssetUtils.createCGImageSource(from: inputPath)
+
+        let iconsetConfigurations = [
+            ResizeConfiguration(width: 16, height: 16, filename: "icon_16x16.png"),
+            ResizeConfiguration(width: 32, height: 32, filename: "icon_16x16@2x.png"),
+            ResizeConfiguration(width: 32, height: 32, filename: "icon_32x32.png"),
+            ResizeConfiguration(width: 64, height: 64, filename: "icon_32x32@2x.png"),
+            ResizeConfiguration(width: 128, height: 128, filename: "icon_128x128.png"),
+            ResizeConfiguration(width: 256, height: 256, filename: "icon_128x128@2x.png"),
+            ResizeConfiguration(width: 256, height: 256, filename: "icon_256x256.png"),
+            ResizeConfiguration(width: 512, height: 512, filename: "icon_256x256@2x.png"),
+            ResizeConfiguration(width: 512, height: 512, filename: "icon_512x512.png"),
+            ResizeConfiguration(width: 1024, height: 1024, filename: "icon_512x512@2x.png"),
+        ]
+
+        let outputFolder = URL(fileURLWithPath: outputPath).appendingPathComponent("icon.iconset")
+
+        try AssetUtils.createDirectoryIfNeeded(url: outputFolder)
+
+        iconsetConfigurations.forEach { config in
+            try? resizeImage(imageSource: imageSource, resizeConfiguration: config, outputUrl: outputFolder)
+        }
+    }
+
 }

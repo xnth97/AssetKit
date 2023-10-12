@@ -13,8 +13,8 @@ struct Assetool: ParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "assetool",
         abstract: "A command line tool for generating image assets",
-        version: "1.2.0",
-        subcommands: [Icon.self, Image.self],
+        version: "1.2.1",
+        subcommands: [Icon.self, Image.self, OsxIconset.self],
         defaultSubcommand: Icon.self)
 
 }
@@ -101,6 +101,29 @@ extension Assetool {
                 outputPath: output ?? FileManager.default.currentDirectoryPath,
                 width: parseOptionalFloat(width),
                 height: parseOptionalFloat(height))
+        }
+
+    }
+
+}
+
+extension Assetool {
+
+    struct OsxIconset: ParsableCommand {
+
+        @Argument(help: "Path to the input image")
+        var input: String
+
+        @Option(name: .shortAndLong, help: "Path of the output folder. If empty, will use terminal current path")
+        var output: String?
+
+        static var configuration = CommandConfiguration(
+            abstract: "Generates OSX iconset format")
+
+        func run() {
+            AssetKit.generateOSXIconSet(
+                inputPath: input,
+                outputPath: output ?? FileManager.default.currentDirectoryPath)
         }
 
     }
